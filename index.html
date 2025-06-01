@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>英語音読アプリ</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      font-family: sans-serif;
+      padding: 20px;
+      max-width: 800px;
+      margin: auto;
+    }
+    #currentSentence {
+      font-size: 1.8em;
+      margin: 20px 0;
+      font-weight: bold;
+      color: #004080;
+      background: #e6f2ff;
+      padding: 15px;
+      border-left: 6px solid #3399ff;
+    }
+    .controls {
+      margin: 10px 0;
+    }
+    textarea {
+      width: 100%;
+      height: 60px;
+      margin-top: 10px;
+    }
+    #fullText {
+      font-size: 0.9em;
+      margin-top: 30px;
+      padding: 10px;
+      background: #f9f9f9;
+      border: 1px solid #ccc;
+      line-height: 1.6;
+    }
+    .highlight {
+      background-color: yellow;
+      font-weight: bold;
+    }
+    @media (max-width: 600px) {
+      #currentSentence {
+        font-size: 1.4em;
+      }
+      #fullText {
+        font-size: 0.8em;
+      }
+    }
+  </style>
+</head>
+<body>
+  <h1>英語音読アプリ</h1>
+
+  <input type="file" id="fileInput" accept=".txt"><br><br>
+
+  <div id="progress">文番号: - / -</div>
+
+  <!-- 現在の文（大きく） -->
+  <div id="currentSentence">ここに現在の文が表示されます</div>
+
+  <div class="controls">
+    <button onclick="prevSentence()">← 前へ</button>
+    <button onclick="startSpeaking()">▶ 読み上げ開始</button>
+    <button onclick="stopSpeaking()">⏹ 停止</button>
+    <button onclick="nextSentence()">次へ →</button>
+  </div>
+
+  <label>📝 メモ（この文に関して）:</label>
+  <textarea id="noteBox" placeholder="聞き取れなかった単語などを書いてください"></textarea>
+
+  <label for="rateRange">🔉 読み上げスピード: <span id="rateLabel">1.0</span></label>
+  <input type="range" id="rateRange" min="0.5" max="2.0" value="1.0" step="0.1">
+
+  <br><br>
+  <button onclick="downloadNotes()">💾 メモを保存</button>
+
+  <!-- 全文表示（小さく） -->
+  <div id="fullText">全文はここに表示されます</div>
+
+  <script>
+    let sentences = [];
+    let currentIndex = 0;
+    let speaking = false;
+    let notes = {};
+    let rate = 1.0;
+
+    const currentSentenceEl = document.getElementById('currentSentence');
+    const noteBox = document.getElementById('noteBox');
+    const progress = document.getElementById('progress');
+    const fullTextEl = document.getElementById('fullText');
+    const rateRange = document.getElementById('rateRange');
+    const rateLabel = document.getElementById('rateLabel');
+
+    // ファイル読み込み
+    document.getElementById('fileInput').addEventListener('change', function (e) {
+      const file = e.target.files[0];
+      const reader = new FileReader();
+
+      reader.onload = function (event) {
+        const text = event.target.result;
+        const segmenter = new Intl.Segmenter('en', { granularity: 'sentence' });
+        sentences = Array.from(segmenter.segment(text), s => s.segment.trim()).filter(Boolean);
+        currentIndex = 0;
+        loadNotes();
+        updateDisplay();
+      };
+
+      if (file) {
+        reader.readAsText(file);
+      }
+    });
+
+    function updateDisplay() {
+      const current = sentences[currentIndex] || "文がありません";
+      currentSentenceEl.textContent = current;
+      progress.textContent = `文番号: ${currentIndex + 1} / ${sentences.length}`;
+      renderFullText();
+    }
+
+    function renderFullText() {
+      fullTextEl.innerHTML = sentences.map((s, i) => {
+        const clean = s;
+        return i === currentIndex
+          ? `<span class="highlight" onclick="jumpTo(${i})">${clean}</span>`
+          : `<span onclick="jumpTo(${i})">${clean}</span>`;
+      }).join(' ');
+    }
+
+    function startSpeaking() {
+      if (!sentences.length || speaking) return;
+      speaking = true;
+      loopSpeak();
+    }
+
+    function loopSpeak() {
+      if (!speaking) return;
+
+      const utter = new SpeechSynthesisUtterance(sentences[currentIndex]);
+      utter.lang = 'en-US';
+      utter.rate = rate;
+
+      utter.onend = () => {
+        if (speaking) {
+          setTimeout(loopSpeak, 800);
+        }
+      };
+
+      speechSynthesis.speak(utter);
+    }
+
+    function stopSpeaking() {
+      speaking = false;
+      speechSynthesis.cancel();
+    }
+
+    function nextSentence() {
+      saveNote();
+      if (currentIndex < sentences.length - 1) {
+        currentIndex++;
+        stopSpeaking();
+        loadNote();
+        updateDisplay();
+      }
+    }
+
+    function prevSentence() {
+      saveNote();
+      if (currentIndex > 0) {
+        currentIndex--;
+        stopSpeaking();
+        loadNote();
+        updateDisplay();
+      }
+    }
+
+    function jumpTo(index) {
+      saveNote();
+      currentIndex = index;
+      stopSpeaking();
+      loadNote();
+      updateDisplay();
+    }
+
+    function saveNote() {
+      notes[currentIndex] = noteBox.value;
+      localStorage.setItem('sentenceNotes', JSON.stringify(notes));
+    }
+
+    function loadNote() {
+      const saved = localStorage.getItem('sentenceNotes');
+      if (saved) {
+        notes = JSON.parse(saved);
+        noteBox.value = notes[currentIndex] || "";
+      } else {
+        noteBox.value = "";
+      }
+    }
+
+    function loadNotes() {
+      const saved = localStorage.getItem('sentenceNotes');
+      if (saved) {
+        notes = JSON.parse(saved);
+      } else {
+        notes = {};
+      }
+      loadNote();
+    }
+
+    rateRange.addEventListener('input', function () {
+      rate = parseFloat(this.value);
+      rateLabel.textContent = rate.toFixed(1);
+    });
+
+    function downloadNotes() {
+      saveNote();
+      let content = '';
+      sentences.forEach((s, i) => {
+        content += `文 ${i + 1}: ${s}\nメモ: ${notes[i] || ''}\n\n`;
+      });
+      const blob = new Blob([content], { type: 'text/plain' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'notes.txt';
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    // 単語ダブルクリックで辞書表示
+    currentSentenceEl.addEventListener('dblclick', function (e) {
+      const selection = window.getSelection().toString().trim();
+      if (selection) {
+        const url = `https://ejje.weblio.jp/content/${encodeURIComponent(selection)}`;
+        window.open(url, '_blank');
+      }
+    });
+  </script>
+</body>
+</html>
