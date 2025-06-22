@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>任意動画 × 字幕リピート練習</title>
+  <link rel="stylesheet" href="./style/videoModeStyle.css" class="src">
+</head>
+<body>
+  <h1>🎬 任意動画でリピート練習</h1>
+
+  <div id="ModeChangeBox">
+    <p>モード変更</p>
+    <button onclick="location.href='./index.html'">「ファイルから練習」へ</button>
+  </div>
+
+  <input type="file" id="videoInput" accept="video/*"><br>
+  <video id="video" controls></video>
+
+  <p>
+    <button onclick="setA()">🅰️ A点設定</button>
+    <button onclick="setB()">🅱️ B点設定</button>
+    <button onclick="toggleLoop()">🔁 ループ：<span id="loopStatus">OFF</span></button>
+  </p>
+
+  <label>📝 字幕を以下の形式で入力（例：<code>0:05 Hello world.</code>）</label>
+  <textarea id="subtitleInput" placeholder="0:02 Hello\n0:06 How are you?\n..."></textarea>
+  <button onclick="loadSubtitles()">字幕読み込み</button>
+
+  <div id="subtitles"></div>
+
+  <script src="./video.js"></script>
+</body>
+</html>
