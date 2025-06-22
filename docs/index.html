@@ -1,40 +1,35 @@
+</html>
 <!DOCTYPE html>
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
   <title>英語音読アプリ</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="stylesheet" href="./style/style.css" src="">
+  <link rel="stylesheet" href="./style/style.css" class="src">
 </head>
 <body>
-  <h1>英語音読アプリ</h1>
+<h1>英語音読アプリ</h1>
 
-  <input type="file" id="fileInput" accept=".txt"><br><br>
+<input type="file" id="fileInput" accept=".txt"><br><br>
 
-  <div id="progress">文番号: - / -</div>
+<div id="progress">文番号: - / -</div>
+<div id="currentSentence">ここに現在の文が表示されます</div>
 
-  <!-- 現在の文（大きく） -->
-  <div id="currentSentence">ここに現在の文が表示されます</div>
+<div class="controls">
+  <button onclick="prevSentence()">← 前へ</button>
+  <button onclick="togglePlay()">▶/⏸ 再生・停止</button>
+  <button onclick="restartSentence()">🔄 リスタート</button>
+  <button onclick="nextSentence()">次へ →</button>
+</div>
 
-  <div class="controls">
-    <button id="previousBtn" onclick="prevSentence()">← 前へ</button>
-    <button id="startBtn" onclick="startSpeaking()">▶ 読み上げ開始</button>
-    <button id="stopBtn" onclick="stopSpeaking()">⏹ 停止</button>
-    <button id="nextBtn" onclick="nextSentence()">次へ →</button>
-  </div>
+<label>📝 メモ:</label>
+<textarea id="noteBox" placeholder="聞き取れなかった単語など"></textarea>
 
-  <label>📝 メモ（この文に関して）:</label>
-  <textarea id="noteBox" placeholder="聞き取れなかった単語などを書いてください"></textarea>
+<label for="rateRange">🔉 スピード: <span id="rateLabel">1.0</span></label>
+<input type="range" id="rateRange" min="0.5" max="2.0" value="1.0" step="0.1">
 
-  <label for="rateRange">🔉 読み上げスピード: <span id="rateLabel">1.0</span></label>
-  <input type="range" id="rateRange" min="0.5" max="2.0" value="1.0" step="0.1">
+<div id="fullText">全文はここに表示されます</div>
 
-  <br><br>
-  <button onclick="downloadNotes()">💾 メモを保存</button>
-
-  <!-- 全文表示（小さく） -->
-  <div id="fullText">全文はここに表示されます</div>
-
-  <script src="./index.js"></script>
+<script src="./index.js"></script>
 </body>
 </html>

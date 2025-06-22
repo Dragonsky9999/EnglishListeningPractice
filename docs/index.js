@@ -1,175 +1,61 @@
-let sentences = [];
-let currentIndex = 0;
-let speaking = false;
-let notes = {};
-let rate = 1.0;
+let sentences=[], currentIndex=0, speaking=false, notes={}, rate=1.0;
 
-const currentSentenceEl = document.getElementById('currentSentence');
-const noteBox = document.getElementById('noteBox');
-const progress = document.getElementById('progress');
-const fullTextEl = document.getElementById('fullText');
-const rateRange = document.getElementById('rateRange');
-const rateLabel = document.getElementById('rateLabel');
+const curEl=document.getElementById('currentSentence'),
+      noteBox=document.getElementById('noteBox'),
+      progress=document.getElementById('progress'),
+      fullEl=document.getElementById('fullText'),
+      rateRange=document.getElementById('rateRange'),
+      rateLabel=document.getElementById('rateLabel');
 
-//各種ボタン
-const previousBtn = document.getElementById("previousBtn");
-const startBtn = document.getElementById("startBtn");
-const stopBtn = document.getElementById("stopBtn");
-const nextBtn = document.getElementById("nextBtn");
-
-
-// ファイル読み込み
-document.getElementById('fileInput').add
-EventListener('change', function (e) {
-
-  const file = e.target.files[0];
-  const reader = new FileReader();
-
-  reader.onload = function (event) {
-
-    const text = event.target.result;
-    const segmenter = new Intl.Segmenter('en', { granularity: 'sentence' });
-    sentences = Array.from(segmenter.segment(text), s => s.segment.trim()).filter(Boolean);
-    currentIndex = 0;
-    loadNotes();
-    updateDisplay();
-
+document.getElementById('fileInput').addEventListener('change',e=>{
+  const f=e.target.files[0]; if(!f) return;
+  const rd=new FileReader();
+  rd.onload=ev=>{
+    const seg=new Intl.Segmenter('en',{granularity:'sentence'});
+    sentences=Array.from(seg.segment(ev.target.result),s=>s.segment.trim()).filter(Boolean);
+    currentIndex=0; loadNotes(); updateDisplay();
   };
-  if (file) {
-    reader.readAsText(file);
-  }
-
+  rd.readAsText(f);
 });
 
-function updateDisplay() {
-  const current = sentences[currentIndex] || "文がありません";
-
-  currentSentenceEl.textContent = current;
-  progress.textContent = `文番号: ${currentIndex + 1} / ${sentences.length}`;
-  renderFullText();
+function updateDisplay(){
+  curEl.textContent=sentences[currentIndex]||'文がありません';
+  progress.textContent=`文番号: ${currentIndex+1} / ${sentences.length}`;
+  fullEl.innerHTML=sentences.map((s,i)=>
+    i===currentIndex?`<span class="highlight" onclick="jumpTo(${i})">${s}</span>`:
+                      `<span onclick="jumpTo(${i})">${s}</span>`).join(' ');
 }
 
-function renderFullText() {
-  fullTextEl.innerHTML = sentences.map((s, i) => {
-
-    const clean = s;
-    return i === currentIndex
-      ? `<span class="highlight" onclick="jumpTo(${i})">${clean}</span>`
-      : `<span onclick="jumpTo(${i})">${clean}</span>`;
-  }).join(' ');
-
+function loopSpeak(){
+  if(!speaking) return;
+  const ut=new SpeechSynthesisUtterance(sentences[currentIndex]);
+  ut.lang='en-US'; ut.rate=rate;
+  ut.onend=()=>{ if(speaking) setTimeout(loopSpeak,800); };
+  speechSynthesis.speak(ut);
 }
 
-function startSpeaking() {
+function startSpeaking(){ if(!sentences.length||speaking) return; speaking=true; loopSpeak();}
+function stopSpeaking(){ speaking=false; speechSynthesis.cancel();}
+function togglePlay(){ speaking?stopSpeaking():startSpeaking();}
+function restartSentence(){ stopSpeaking(); speaking=true; loopSpeak();}
 
-  if (!sentences.length || speaking) return;
+function nextSentence(){ saveNote(); if(currentIndex<sentences.length-1){ currentIndex++; stopSpeaking(); loadNote(); updateDisplay(); }}
+function prevSentence(){ saveNote(); if(currentIndex>0){ currentIndex--; stopSpeaking(); loadNote(); updateDisplay(); }}
+function jumpTo(i){ saveNote(); currentIndex=i; stopSpeaking(); loadNote(); updateDisplay(); }
 
-  speaking = true;
-  loopSpeak();
+function saveNote(){ notes[currentIndex]=noteBox.value; localStorage.setItem('sentenceNotes',JSON.stringify(notes)); }
+function loadNotes(){ const s=localStorage.getItem('sentenceNotes'); notes=s?JSON.parse(s):{}; loadNote();}
+function loadNote(){ noteBox.value=notes[currentIndex]||''; }
 
-}
+rateRange.oninput=function(){ rate=parseFloat(this.value); rateLabel.textContent=rate.toFixed(1); };
 
-function loopSpeak() {
-
-  if (!speaking) return;
-  const utter = new SpeechSynthesisUtterance(sentences[currentIndex]);
-  utter.lang = 'en-US';
-  utter.rate = rate;
-  utter.onend = () => {
-    if (speaking) {
-      setTimeout(loopSpeak, 800);
-    }
-  };
-  speechSynthesis.speak(utter);
-}
-
-function stopSpeaking() {
-  speaking = false;
-  speechSynthesis.cancel();
-}
-
-function nextSentence() {
-  saveNote();
-  if (currentIndex < sentences.length - 1) {
-    currentIndex++;
-    stopSpeaking();
-    loadNote();
-    updateDisplay();
+// 🔑 キーボード操作
+document.addEventListener('keydown',e=>{
+  if(e.target.tagName==='TEXTAREA') return;      // メモ入力中は無効化
+  switch(e.key){
+    case 'ArrowLeft': e.preventDefault(); prevSentence(); break;
+    case 'ArrowRight': e.preventDefault(); nextSentence(); break;
+    case ' ':          e.preventDefault(); togglePlay();  break;
+    case 'r': case 'R':restartSentence(); break;
   }
-}
-
-function prevSentence() {
-  saveNote();
-  if (currentIndex > 0) {
-    currentIndex--;
-    stopSpeaking();
-    loadNote();
-    updateDisplay();
-  }
-}
-
-function jumpTo(index) {
-  saveNote();
-  currentIndex = index;
-  stopSpeaking();
-  loadNote();
-  updateDisplay();
-}
-
-function saveNote() {
-  notes[currentIndex] = noteBox.value;
-  localStorage.setItem('sentenceNotes', JSON.stringify(notes));
-}
-
-function loadNote() {
-  const saved = localStorage.getItem('sentenceNotes');
-  if (saved) {
-    notes = JSON.parse(saved);
-    noteBox.value = notes[currentIndex] || "";
-  } else {
-    noteBox.value = "";
-  }
-}
-
-function loadNotes() {
-  const saved = localStorage.getItem('sentenceNotes');
-  if (saved) {
-    notes = JSON.parse(saved);
-  } else {
-    notes = {};
-  }
-  loadNote();
-}
-rateRange.addEventListener('input', function () {
-  rate = parseFloat(this.value);
-  rateLabel.textContent = rate.toFixed(1);
 });
-
-function downloadNotes() {
-  saveNote();
-  let content = '';
-  sentences.forEach((s, i) => {
-    content += `文 ${i + 1}: ${s}\nメモ: ${notes[i] || ''}\n\n`;
-  });
-  const blob = new Blob([content], { type: 'text/plain' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = 'notes.txt';
-  a.click();
-  URL.revokeObjectURL(url);
-}
-
-// 単語ダブルクリックで辞書表示
-currentSentenceEl.addEventListener('dblclick', function (e) {
-  const selection = window.getSelection().toString().trim();
-  if (selection) {
-    const url = `https://ejje.weblio.jp/content/${encodeURIComponent(selection)}`;
-    window.open(url, '_blank');
-  }
-})
-
-startBtn.addEventListener("click", prevSentence)
-stopBtn.addEventListener("click", startSpeaking)
-previousBtn.addEventListener("click", stopSpeaking)
-nextBtn.addEventListener("click", nextSentence)

@@ -1,43 +1,9 @@
-    body {
-      font-family: sans-serif;
-      padding: 20px;
-      max-width: 800px;
-      margin: auto;
-    }
-    #currentSentence {
-      font-size: 1.8em;
-      margin: 20px 0;
-      font-weight: bold;
-      color: #004080;
-      background: #e6f2ff;
-      padding: 15px;
-      border-left: 6px solid #3399ff;
-    }
-    .controls {
-      margin: 10px 0;
-    }
-    textarea {
-      width: 100%;
-      height: 60px;
-      margin-top: 10px;
-    }
-    #fullText {
-      font-size: 0.9em;
-      margin-top: 30px;
-      padding: 10px;
-      background: #f9f9f9;
-      border: 1px solid #ccc;
-      line-height: 1.6;
-    }
-    .highlight {
-      background-color: yellow;
-      font-weight: bold;
-    }
-    @media (max-width: 600px) {
-      #currentSentence {
-        font-size: 1.4em;
-      }
-      #fullText {
-        font-size: 0.8em;
-      }
-    }
+body{font-family:sans-serif;padding:20px;max-width:800px;margin:auto}
+#currentSentence{font-size:1.8em;margin:20px 0;font-weight:bold;color:#004080;
+  background:#e6f2ff;padding:15px;border-left:6px solid #3399ff}
+.controls{margin:10px 0}
+textarea{width:100%;height:60px;margin-top:10px}
+#fullText{font-size:.9em;margin-top:30px;padding:10px;background:#f9f9f9;
+  border:1px solid #ccc;line-height:1.6}
+.highlight{background:yellow;font-weight:bold}
+@media(max-width:600px){#currentSentence{font-size:1.4em} #fullText{font-size:.8em}}
